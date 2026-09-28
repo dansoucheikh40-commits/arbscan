@@ -75,15 +75,6 @@
       color: #b91c1c;
       border-radius: 10px;
     }
-
-    #bookmakers {
-      margin-top: 25px;
-      line-height: 1.8;
-    }
-
-    #bookmakers h2 {
-      margin-bottom: 15px;
-    }
   </style>
 </head>
 
@@ -102,48 +93,69 @@
     <label for="mise">Mise totale (CFA)</label>
     <input type="number" id="mise" step="100" placeholder="Exemple : 10000">
 
-    <button onclick="calculer()">Calculer l'arbitrage</button>
+    <button onclick="calculer()">
+      Calculer l'arbitrage
+    </button>
 
     <div id="resultat"></div>
 
-    <div id="bookmakers"></div>
-
   </div>
-
-  <script src="data.js"></script>
-  <script src="matches.js"></script>
 
   <script>
 
     function calculer() {
 
-      const cote1 = parseFloat(document.getElementById("cote1").value);
-      const cote2 = parseFloat(document.getElementById("cote2").value);
-      const mise = parseFloat(document.getElementById("mise").value);
+      const cote1 = parseFloat(
+        document.getElementById("cote1").value
+      );
 
-      const resultat = document.getElementById("resultat");
+      const cote2 = parseFloat(
+        document.getElementById("cote2").value
+      );
 
-      if (!cote1 || !cote2 || !mise || cote1 <= 1 || cote2 <= 1 || mise <= 0) {
+      const mise = parseFloat(
+        document.getElementById("mise").value
+      );
 
-        resultat.innerHTML =
-          '<div class="error">Veuillez entrer des valeurs valides.</div>';
+      const resultat =
+        document.getElementById("resultat");
+
+      if (
+        isNaN(cote1) ||
+        isNaN(cote2) ||
+        isNaN(mise) ||
+        cote1 <= 1 ||
+        cote2 <= 1 ||
+        mise <= 0
+      ) {
+
+        resultat.innerHTML = `
+          <div class="error">
+            Veuillez entrer des valeurs valides.
+          </div>
+        `;
 
         return;
       }
 
-      const sommeInverseManuel =
+      const sommeInverse =
         (1 / cote1) + (1 / cote2);
 
-      const profitPourcentage =
-        (1 - sommeInverseManuel) * 100;
+      const marge =
+        (1 - sommeInverse) * 100;
 
-      if (profitPourcentage <= 0) {
+      if (marge <= 0) {
 
         resultat.innerHTML = `
           <div class="error">
-            <strong>Pas d'arbitrage</strong><br>
-            Marge d'arbitrage :
-            ${profitPourcentage.toFixed(2)} %
+
+            <strong>Pas d'arbitrage</strong>
+
+            <br><br>
+
+            Marge :
+            ${marge.toFixed(2)} %
+
           </div>
         `;
 
@@ -151,10 +163,12 @@
       }
 
       const mise1 =
-        mise * ((1 / cote1) / sommeInverseManuel);
+        mise *
+        ((1 / cote1) / sommeInverse);
 
       const mise2 =
-        mise * ((1 / cote2) / sommeInverseManuel);
+        mise *
+        ((1 / cote2) / sommeInverse);
 
       const retour =
         mise1 * cote1;
@@ -163,15 +177,16 @@
         retour - mise;
 
       resultat.innerHTML = `
+
         <div class="result">
 
-          <strong>Arbitrage détecté</strong>
+          <strong>✅ Arbitrage détecté</strong>
 
           <br><br>
 
           Marge :
           <strong>
-            ${profitPourcentage.toFixed(2)} %
+            ${marge.toFixed(2)} %
           </strong>
 
           <br>
@@ -204,188 +219,7 @@
 
           <br>
 
-          Profit :
-          <strong>
-            ${Math.round(profit).toLocaleString()} CFA
-          </strong>
-
-        </div>
-      `;
-    }
-
-
-    const match = matches[0];
-
-    const meilleureCoteA =
-      Math.max(
-        ...match.bookmakers.map(b => b.coteA)
-      );
-
-    const meilleureCoteB =
-      Math.max(
-        ...match.bookmakers.map(b => b.coteB)
-      );
-
-    const bookmakerA =
-      match.bookmakers.find(
-        b => b.coteA === meilleureCoteA
-      );
-
-    const bookmakerB =
-      match.bookmakers.find(
-        b => b.coteB === meilleureCoteB
-      );
-
-    const sommeInverseAuto =
-      (1 / meilleureCoteA) +
-      (1 / meilleureCoteB);
-
-    const marge =
-      (1 - sommeInverseAuto) * 100;
-
-
-    document.getElementById("bookmakers").innerHTML = `
-
-      <h2>Détection automatique</h2>
-
-      <p>
-        <strong>Match :</strong>
-        ${match.equipeA} vs ${match.equipeB}
-      </p>
-
-      <p>
-        <strong>Meilleure cote ${match.equipeA} :</strong>
-        ${meilleureCoteA}<br>
-        ${bookmakerA.name}
-      </p>
-
-      <p>
-        <strong>Meilleure cote ${match.equipeB} :</strong>
-        ${meilleureCoteB}<br>
-        ${bookmakerB.name}
-      </p>
-
-      <br>
-
-      <label for="miseAuto">
-        Mise totale (CFA)
-      </label>
-
-      <input
-        type="number"
-        id="miseAuto"
-        value="10000"
-        min="1"
-      >
-
-      <button onclick="calculerMises()">
-        Calculer les mises
-      </button>
-
-      <div id="resultatAuto"></div>
-
-      <br>
-
-      <p>
-        <strong>Marge d'arbitrage :</strong>
-        ${marge.toFixed(2)} %
-      </p>
-
-      <p>
-        <strong>
-          ${marge > 0 ? "✅ Arbitrage détecté" : "❌ Pas d'arbitrage"}
-        </strong>
-      </p>
-
-    `;
-
-
-    function calculerMises() {
-
-      const mise =
-        parseFloat(
-          document.getElementById("miseAuto").value
-        );
-
-      const resultatAuto =
-        document.getElementById("resultatAuto");
-
-      if (!mise || mise <= 0) {
-
-        resultatAuto.innerHTML =
-          '<div class="error">Entrez une mise valide.</div>';
-
-        return;
-      }
-
-      if (marge <= 0) {
-
-        resultatAuto.innerHTML =
-          '<div class="error">Pas d'arbitrage disponible.</div>';
-
-        return;
-      }
-
-      const miseA =
-        mise *
-        ((1 / meilleureCoteA) /
-        sommeInverseAuto);
-
-      const miseB =
-        mise *
-        ((1 / meilleureCoteB) /
-        sommeInverseAuto);
-
-      const retour =
-        miseA * meilleureCoteA;
-
-      const profit =
-        retour - mise;
-
-      resultatAuto.innerHTML = `
-
-        <div class="result">
-
-          <strong>Répartition des mises</strong>
-
-          <br><br>
-
-          ${bookmakerA.name} —
-          ${match.equipeA} :
-
-          <strong>
-            ${Math.round(miseA).toLocaleString()} CFA
-          </strong>
-
-          <br>
-
-          ${bookmakerB.name} —
-          ${match.equipeB} :
-
-          <strong>
-            ${Math.round(miseB).toLocaleString()} CFA
-          </strong>
-
-          <br><br>
-
-          Mise totale :
-
-          <strong>
-            ${Math.round(mise).toLocaleString()} CFA
-          </strong>
-
-          <br>
-
-          Retour garanti :
-
-          <strong>
-            ${Math.round(retour).toLocaleString()} CFA
-          </strong>
-
-          <br>
-
           Profit garanti :
-
           <strong>
             ${Math.round(profit).toLocaleString()} CFA
           </strong>
