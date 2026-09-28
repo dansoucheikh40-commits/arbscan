@@ -172,21 +172,53 @@
       `;
     }
 
+    const meilleureCoteA = Math.max(
+      ...bookmakers.map(b => b.odds.equipeA)
+    );
+
+    const meilleureCoteB = Math.max(
+      ...bookmakers.map(b => b.odds.equipeB)
+    );
+
+    const bookmakerA = bookmakers.find(
+      b => b.odds.equipeA === meilleureCoteA
+    );
+
+    const bookmakerB = bookmakers.find(
+      b => b.odds.equipeB === meilleureCoteB
+    );
+
+    const sommeInverse = 
+      (1 / meilleureCoteA) + (1 / meilleureCoteB);
+
+    const marge = (1 - sommeInverse) * 100;
+
     document.getElementById("bookmakers").innerHTML = `
-      <h2>Bookmakers</h2>
+      <h2>Détection automatique</h2>
 
       <p>
-        <strong>Bookmaker 1</strong><br>
-        Équipe A : ${bookmakers[0].odds.equipeA}<br>
-        Équipe B : ${bookmakers[0].odds.equipeB}
+        <strong>Meilleure cote Équipe A :</strong>
+        ${meilleureCoteA}<br>
+        ${bookmakerA.name}
+      </p>
+
+      <p>
+        <strong>Meilleure cote Équipe B :</strong>
+        ${meilleureCoteB}<br>
+        ${bookmakerB.name}
       </p>
 
       <br>
 
       <p>
-        <strong>Bookmaker 2</strong><br>
-        Équipe A : ${bookmakers[1].odds.equipeA}<br>
-        Équipe B : ${bookmakers[1].odds.equipeB}
+        <strong>Marge d'arbitrage :</strong>
+        ${marge.toFixed(2)} %
+      </p>
+
+      <p>
+        <strong>
+          ${marge > 0 ? "✅ Arbitrage détecté" : "❌ Pas d'arbitrage"}
+        </strong>
       </p>
     `;
   </script>
