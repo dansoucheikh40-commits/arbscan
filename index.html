@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculateur d'arbitrage sportif  </title>
+  <title>ArbScan - Calculateur d'arbitrage</title>
 
   <style>
     * {
@@ -31,6 +31,11 @@
     h1 {
       text-align: center;
       margin-bottom: 25px;
+    }
+
+    h2 {
+      margin-top: 30px;
+      margin-bottom: 15px;
     }
 
     label {
@@ -75,6 +80,24 @@
       color: #b91c1c;
       border-radius: 10px;
     }
+
+    .match {
+      margin-top: 20px;
+      padding: 18px;
+      background: #f8fafc;
+      border-radius: 10px;
+      line-height: 1.8;
+      border: 1px solid #e5e7eb;
+    }
+
+    .arb {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+    }
+
+    #bookmakers {
+      margin-top: 25px;
+    }
   </style>
 </head>
 
@@ -82,22 +105,39 @@
 
   <div class="container">
 
-    <h1>Calculateur d'arbitrage</h1>
+    <h1>Calculateur d'arbitrage sportif</h1>
 
     <label for="cote1">Cote 1</label>
-    <input type="number" id="cote1" step="0.01" placeholder="Exemple : 2.50">
+    <input
+      type="number"
+      id="cote1"
+      step="0.01"
+      placeholder="Exemple : 2.50"
+    >
 
     <label for="cote2">Cote 2</label>
-    <input type="number" id="cote2" step="0.01" placeholder="Exemple : 2.10">
+    <input
+      type="number"
+      id="cote2"
+      step="0.01"
+      placeholder="Exemple : 2.10"
+    >
 
     <label for="mise">Mise totale (CFA)</label>
-    <input type="number" id="mise" step="100" placeholder="Exemple : 10000">
+    <input
+      type="number"
+      id="mise"
+      step="100"
+      placeholder="Exemple : 10000"
+    >
 
     <button onclick="calculer()">
       Calculer l'arbitrage
     </button>
 
     <div id="resultat"></div>
+
+    <div id="bookmakers"></div>
 
   </div>
 
@@ -231,6 +271,114 @@
 
       `;
     }
+
+
+    /* =========================
+       DÉTECTION AUTOMATIQUE
+       ========================= */
+
+    function afficherArbitrages() {
+
+      const zone =
+        document.getElementById("bookmakers");
+
+      zone.innerHTML = `
+        <h2>🔎 Détection automatique</h2>
+      `;
+
+      matches.forEach((match) => {
+
+        const meilleureCoteA =
+          Math.max(
+            ...match.bookmakers.map(
+              bookmaker => bookmaker.coteA
+            )
+          );
+
+        const meilleureCoteB =
+          Math.max(
+            ...match.bookmakers.map(
+              bookmaker => bookmaker.coteB
+            )
+          );
+
+        const bookmakerA =
+          match.bookmakers.find(
+            bookmaker =>
+              bookmaker.coteA === meilleureCoteA
+          );
+
+        const bookmakerB =
+          match.bookmakers.find(
+            bookmaker =>
+              bookmaker.coteB === meilleureCoteB
+          );
+
+        const sommeInverse =
+          (1 / meilleureCoteA) +
+          (1 / meilleureCoteB);
+
+        const marge =
+          (1 - sommeInverse) * 100;
+
+        const div =
+          document.createElement("div");
+
+        div.className =
+          marge > 0
+            ? "match arb"
+            : "match";
+
+        div.innerHTML = `
+
+          <strong>
+            ${match.equipeA} vs ${match.equipeB}
+          </strong>
+
+          <br><br>
+
+          Meilleure cote ${match.equipeA} :
+          <strong>${meilleureCoteA}</strong>
+
+          <br>
+
+          Bookmaker :
+          <strong>${bookmakerA.name}</strong>
+
+          <br><br>
+
+          Meilleure cote ${match.equipeB} :
+          <strong>${meilleureCoteB}</strong>
+
+          <br>
+
+          Bookmaker :
+          <strong>${bookmakerB.name}</strong>
+
+          <br><br>
+
+          Marge :
+          <strong>${marge.toFixed(2)} %</strong>
+
+          <br><br>
+
+          <strong>
+            ${
+              marge > 0
+                ? "✅ Arbitrage détecté"
+                : "❌ Pas d'arbitrage"
+            }
+          </strong>
+
+        `;
+
+        zone.appendChild(div);
+
+      });
+
+    }
+
+    afficherArbitrages();
 
   </script>
 
