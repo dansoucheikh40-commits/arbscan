@@ -188,7 +188,7 @@
       b => b.odds.equipeB === meilleureCoteB
     );
 
-    const sommeInverse = 
+    const sommeInverse =
       (1 / meilleureCoteA) + (1 / meilleureCoteB);
 
     const marge = (1 - sommeInverse) * 100;
@@ -210,6 +210,22 @@
 
       <br>
 
+      <label for="miseAuto">Mise totale (CFA)</label>
+      <input
+        type="number"
+        id="miseAuto"
+        value="10000"
+        min="1"
+      >
+
+      <button onclick="calculerMises()">
+        Calculer les mises
+      </button>
+
+      <div id="resultatAuto"></div>
+
+      <br>
+
       <p>
         <strong>Marge d'arbitrage :</strong>
         ${marge.toFixed(2)} %
@@ -221,6 +237,67 @@
         </strong>
       </p>
     `;
+
+    function calculerMises() {
+
+      const mise = parseFloat(
+        document.getElementById("miseAuto").value
+      );
+
+      const resultatAuto =
+        document.getElementById("resultatAuto");
+
+      if (!mise || mise <= 0) {
+        resultatAuto.innerHTML =
+          '<div class="error">Entrez une mise valide.</div>';
+        return;
+      }
+
+      if (marge <= 0) {
+        resultatAuto.innerHTML =
+          '<div class="error">Pas d'arbitrage disponible.</div>';
+        return;
+      }
+
+      const miseA =
+        mise * ((1 / meilleureCoteA) / sommeInverse);
+
+      const miseB =
+        mise * ((1 / meilleureCoteB) / sommeInverse);
+
+      const retour =
+        miseA * meilleureCoteA;
+
+      const profit =
+        retour - mise;
+
+      resultatAuto.innerHTML = `
+        <div class="result">
+
+          <strong>Répartition des mises</strong><br><br>
+
+          ${bookmakerA.name} — Équipe A :
+          <strong>${Math.round(miseA).toLocaleString()} CFA</strong>
+          <br>
+
+          ${bookmakerB.name} — Équipe B :
+          <strong>${Math.round(miseB).toLocaleString()} CFA</strong>
+          <br><br>
+
+          Mise totale :
+          <strong>${Math.round(mise).toLocaleString()} CFA</strong>
+          <br>
+
+          Retour garanti :
+          <strong>${Math.round(retour).toLocaleString()} CFA</strong>
+          <br>
+
+          Profit garanti :
+          <strong>${Math.round(profit).toLocaleString()} CFA</strong>
+
+        </div>
+      `;
+    }
   </script>
 
 </body>
