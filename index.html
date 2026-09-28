@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calculateur d'arbitrage</title>
-
   <style>
     * {
       box-sizing: border-box;
@@ -12,13 +11,11 @@
       padding: 0;
       font-family: Arial, sans-serif;
     }
-
     body {
       background: #f4f6f8;
       padding: 20px;
       color: #222;
     }
-
     .container {
       max-width: 500px;
       margin: auto;
@@ -27,19 +24,16 @@
       border-radius: 15px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
-
     h1 {
       text-align: center;
       margin-bottom: 25px;
     }
-
     label {
       display: block;
       margin-top: 15px;
       margin-bottom: 6px;
       font-weight: bold;
     }
-
     input {
       width: 100%;
       padding: 12px;
@@ -47,7 +41,6 @@
       border-radius: 8px;
       font-size: 16px;
     }
-
     button {
       width: 100%;
       margin-top: 20px;
@@ -59,7 +52,6 @@
       font-size: 16px;
       cursor: pointer;
     }
-
     .result {
       margin-top: 25px;
       padding: 18px;
@@ -67,7 +59,6 @@
       border-radius: 10px;
       line-height: 1.8;
     }
-
     .error {
       margin-top: 20px;
       padding: 15px;
@@ -75,141 +66,109 @@
       color: #b91c1c;
       border-radius: 10px;
     }
-
     #bookmakers {
       margin-top: 25px;
       line-height: 1.8;
     }
-
     #bookmakers h2 {
       margin-bottom: 15px;
     }
   </style>
 </head>
-
 <body>
-
   <div class="container">
-
     <h1>Calculateur d'arbitrage</h1>
-
     <label for="cote1">Cote 1</label>
     <input type="number" id="cote1" step="0.01" placeholder="Exemple : 2.50">
-
     <label for="cote2">Cote 2</label>
     <input type="number" id="cote2" step="0.01" placeholder="Exemple : 2.10">
-
     <label for="mise">Mise totale (CFA)</label>
     <input type="number" id="mise" step="100" placeholder="Exemple : 10000">
-
     <button onclick="calculer()">Calculer l'arbitrage</button>
-
     <div id="resultat"></div>
-
     <div id="bookmakers"></div>
-
   </div>
-
   <script src="data.js"></script>
-
+  <script src="matches.js"></script>
   <script>
     function calculer() {
-
       const cote1 = parseFloat(document.getElementById("cote1").value);
       const cote2 = parseFloat(document.getElementById("cote2").value);
       const mise = parseFloat(document.getElementById("mise").value);
-
       const resultat = document.getElementById("resultat");
-
       if (!cote1 || !cote2 || !mise || cote1 <= 1 || cote2 <= 1 || mise <= 0) {
         resultat.innerHTML =
           '<div class="error">Veuillez entrer des valeurs valides.</div>';
         return;
       }
-
       const sommeInverse = (1 / cote1) + (1 / cote2);
       const profitPourcentage = (1 - sommeInverse) * 100;
-
       if (profitPourcentage <= 0) {
-
         resultat.innerHTML = `
           <div class="error">
             <strong>Pas d'arbitrage</strong><br>
             Marge d'arbitrage : ${profitPourcentage.toFixed(2)} %
           </div>
         `;
-
         return;
       }
-
       const mise1 = mise * ((1 / cote1) / sommeInverse);
       const mise2 = mise * ((1 / cote2) / sommeInverse);
-
       const retour = mise1 * cote1;
       const profit = retour - mise;
-
       resultat.innerHTML = `
         <div class="result">
           <strong>Arbitrage détecté</strong><br><br>
-
           Marge : <strong>${profitPourcentage.toFixed(2)} %</strong><br>
-
           Mise sur la cote ${cote1} :
           <strong>${Math.round(mise1).toLocaleString()} CFA</strong><br>
-
           Mise sur la cote ${cote2} :
           <strong>${Math.round(mise2).toLocaleString()} CFA</strong><br>
-
           Mise totale :
           <strong>${Math.round(mise1 + mise2).toLocaleString()} CFA</strong><br>
-
           Retour garanti :
           <strong>${Math.round(retour).toLocaleString()} CFA</strong><br>
-
           Profit :
           <strong>${Math.round(profit).toLocaleString()} CFA</strong>
         </div>
       `;
     }
-
+    /*
+      On utilise maintenant les données de matches.js.
+    */
+    const match = matches[0];
     const meilleureCoteA = Math.max(
-      ...bookmakers.map(b => b.odds.equipeA)
+      ...match.bookmakers.map(b => b.coteA)
     );
-
     const meilleureCoteB = Math.max(
-      ...bookmakers.map(b => b.odds.equipeB)
+      ...match.bookmakers.map(b => b.coteB)
     );
-
-    const bookmakerA = bookmakers.find(
-      b => b.odds.equipeA === meilleureCoteA
+    const bookmakerA = match.bookmakers.find(
+      b => b.coteA === meilleureCoteA
     );
-
-    const bookmakerB = bookmakers.find(
-      b => b.odds.equipeB === meilleureCoteB
+    const bookmakerB = match.bookmakers.find(
+      b => b.coteB === meilleureCoteB
     );
-
     const sommeInverse =
       (1 / meilleureCoteA) + (1 / meilleureCoteB);
-
     const marge = (1 - sommeInverse) * 100;
-
     document.getElementById("bookmakers").innerHTML = `
       <h2>Détection automatique</h2>
-
       <p>
-        <strong>Meilleure cote Équipe A :</strong>
+        <strong>Match :</strong>
+        ${match.equipeA} vs ${match.equipeB}
+      </p>
+      <p>
+        <strong>Meilleure cote ${match.equipeA} :</strong>
         ${meilleureCoteA}<br>
         ${bookmakerA.name}
       </p>
-
       <p>
-        <strong>Meilleure cote Équipe B :</strong>
+        <strong>Meilleure cote ${match.equipeB} :</strong>
         ${meilleureCoteB}<br>
         ${bookmakerB.name}
       </p>
-
       <br>
-
       <label for="miseAuto">Mise totale (CFA)</label>
       <input
         type="number"
@@ -217,88 +176,75 @@
         value="10000"
         min="1"
       >
-
       <button onclick="calculerMises()">
         Calculer les mises
       </button>
-
       <div id="resultatAuto"></div>
-
       <br>
-
       <p>
         <strong>Marge d'arbitrage :</strong>
         ${marge.toFixed(2)} %
       </p>
-
       <p>
         <strong>
           ${marge > 0 ? "✅ Arbitrage détecté" : "❌ Pas d'arbitrage"}
         </strong>
       </p>
     `;
-
     function calculerMises() {
-
       const mise = parseFloat(
         document.getElementById("miseAuto").value
       );
-
       const resultatAuto =
         document.getElementById("resultatAuto");
-
       if (!mise || mise <= 0) {
         resultatAuto.innerHTML =
           '<div class="error">Entrez une mise valide.</div>';
         return;
       }
-
       if (marge <= 0) {
         resultatAuto.innerHTML =
           '<div class="error">Pas d'arbitrage disponible.</div>';
         return;
       }
-
       const miseA =
         mise * ((1 / meilleureCoteA) / sommeInverse);
-
       const miseB =
         mise * ((1 / meilleureCoteB) / sommeInverse);
-
       const retour =
         miseA * meilleureCoteA;
-
       const profit =
         retour - mise;
-
       resultatAuto.innerHTML = `
         <div class="result">
-
           <strong>Répartition des mises</strong><br><br>
-
-          ${bookmakerA.name} — Équipe A :
-          <strong>${Math.round(miseA).toLocaleString()} CFA</strong>
+          ${bookmakerA.name} — ${match.equipeA} :
+          <strong>
+            ${Math.round(miseA).toLocaleString()} CFA
+          </strong>
           <br>
-
-          ${bookmakerB.name} — Équipe B :
-          <strong>${Math.round(miseB).toLocaleString()} CFA</strong>
+          ${bookmakerB.name} — ${match.equipeB} :
+          <strong>
+            ${Math.round(miseB).toLocaleString()} CFA
+          </strong>
           <br><br>
-
           Mise totale :
-          <strong>${Math.round(mise).toLocaleString()} CFA</strong>
+          <strong>
+            ${Math.round(mise).toLocaleString()} CFA
+          </strong>
           <br>
-
           Retour garanti :
-          <strong>${Math.round(retour).toLocaleString()} CFA</strong>
+          <strong>
+            ${Math.round(retour).toLocaleString()} CFA
+          </strong>
           <br>
-
           Profit garanti :
-          <strong>${Math.round(profit).toLocaleString()} CFA</strong>
-
+          <strong>
+            ${Math.round(profit).toLocaleString()} CFA
+          </strong>
         </div>
       `;
     }
   </script>
-
 </body>
 </html>
