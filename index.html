@@ -128,18 +128,11 @@
     }
 <script src="data.js"></script>
     <script>
-  const zoneBookmakers = document.getElementById("bookmakers");
-
-  bookmakers.forEach(bookmaker => {
-    zoneBookmakers.innerHTML += `
-      <p>
-        <strong>${bookmaker.name}</strong><br>
-        Équipe A : ${bookmaker.odds.equipeA}<br>
-        Équipe B : ${bookmaker.odds.equipeB}
-      </p>
-      <hr>
-    `;
-  });
+  document.getElementById("bookmakers").innerHTML = `
+    <h2>Bookmakers</h2>
+    <p>Bookmaker 1 : Équipe A ${bookmakers[0].odds.equipeA} — Équipe B ${bookmakers[0].odds.equipeB}</p>
+    <p>Bookmaker 2 : Équipe A ${bookmakers[1].odds.equipeA} — Équipe B ${bookmakers[1].odds.equipeB}</p>
+  `;
 </script>
 </body>
 </html>
