@@ -82,7 +82,7 @@
     <input type="number" id="mise" step="100" placeholder="Exemple : 10000">
     <button onclick="calculer()">Calculer l'arbitrage</button>
     <div id="resultat"></div>
-  </div>
+  <div id="bookmakers"></div>
   <script>
     function calculer() {
       const cote1 = parseFloat(document.getElementById("cote1").value);
@@ -127,5 +127,19 @@
       `;
     }
 <script src="data.js"></script>
+    <script>
+  const zoneBookmakers = document.getElementById("bookmakers");
+
+  bookmakers.forEach(bookmaker => {
+    zoneBookmakers.innerHTML += `
+      <p>
+        <strong>${bookmaker.name}</strong><br>
+        Équipe A : ${bookmaker.odds.equipeA}<br>
+        Équipe B : ${bookmaker.odds.equipeB}
+      </p>
+      <hr>
+    `;
+  });
+</script>
 </body>
 </html>
