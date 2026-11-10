@@ -4,383 +4,208 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ArbScan - Calculateur d'arbitrage</title>
-
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    body {
-      background: #f4f6f8;
-      padding: 20px;
-      color: #222;
-    }
-
-    .container {
-      max-width: 500px;
-      margin: auto;
-      background: white;
-      padding: 25px;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    h2 {
-      margin-top: 30px;
-      margin-bottom: 15px;
-    }
-
-    label {
-      display: block;
-      margin-top: 15px;
-      margin-bottom: 6px;
-      font-weight: bold;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 20px;
-      padding: 13px;
-      border: none;
-      border-radius: 8px;
-      background: #111827;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    .result {
-      margin-top: 25px;
-      padding: 18px;
-      background: #f0fdf4;
-      border-radius: 10px;
-      line-height: 1.8;
-    }
-
-    .error {
-      margin-top: 20px;
-      padding: 15px;
-      background: #fef2f2;
-      color: #b91c1c;
-      border-radius: 10px;
-    }
-
-    .match {
-      margin-top: 20px;
-      padding: 18px;
-      background: #f8fafc;
-      border-radius: 10px;
-      line-height: 1.8;
-      border: 1px solid #e5e7eb;
-    }
-
-    .arb {
-      background: #f0fdf4;
-      border: 1px solid #86efac;
-    }
-
-    #bookmakers {
-      margin-top: 25px;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #f4f6f8; padding: 20px; color: #222; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 22px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,.1); }
+    h1 { text-align: center; margin-bottom: 20px; }
+    h2 { margin-top: 25px; margin-bottom: 15px; }
+    label { display: block; margin-top: 15px; margin-bottom: 6px; font-weight: bold; }
+    input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+    button { width: 100%; margin-top: 15px; padding: 13px; border: 0; border-radius: 8px; background: #111827; color: white; font-size: 16px; cursor: pointer; }
+    button:disabled { opacity: .6; }
+    .result, .match { margin-top: 18px; padding: 16px; border-radius: 10px; line-height: 1.8; border: 1px solid #e5e7eb; }
+    .result, .arb { background: #f0fdf4; border-color: #86efac; }
+    .match { background: #f8fafc; }
+    .error { margin-top: 18px; padding: 15px; background: #fef2f2; color: #b91c1c; border-radius: 10px; }
+    .status { margin-top: 15px; padding: 12px; background: #eff6ff; border-radius: 8px; line-height: 1.6; }
+    .small { color: #666; font-size: 13px; }
   </style>
 </head>
-
 <body>
+<div class="container">
+  <h1>ArbScan</h1>
 
-  <div class="container">
+  <h2>Calculateur manuel</h2>
+  <label for="cote1">Cote 1</label>
+  <input type="number" id="cote1" step="0.01" placeholder="Exemple : 2.50">
+  <label for="cote2">Cote 2</label>
+  <input type="number" id="cote2" step="0.01" placeholder="Exemple : 2.10">
+  <label for="mise">Mise totale (CFA)</label>
+  <input type="number" id="mise" step="100" placeholder="Exemple : 10000">
+  <button onclick="calculer()">Calculer l'arbitrage</button>
+  <div id="resultat"></div>
 
-    <h1>Calculateur d'arbitrage sportif</h1>
+  <h2>Détection automatique</h2>
+  <p class="small">Matchs et cotes récupérés avec The Odds API.</p>
+  <button id="charger" onclick="chargerCotes()">Actualiser les matchs et les cotes</button>
+  <div id="statut" class="status">Chargement des matchs...</div>
+  <div id="bookmakers"></div>
+</div>
 
-    <label for="cote1">Cote 1</label>
-    <input
-      type="number"
-      id="cote1"
-      step="0.01"
-      placeholder="Exemple : 2.50"
-    >
+<script>
+"use strict";
 
-    <label for="cote2">Cote 2</label>
-    <input
-      type="number"
-      id="cote2"
-      step="0.01"
-      placeholder="Exemple : 2.10"
-    >
+// Le site appelle le Worker : la clé API reste stockée côté serveur.
+const API_WORKER = "https://calculateurdarbritage.dansoucheikh40.workers.dev/?sport=soccer_epl";
 
-    <label for="mise">Mise totale (CFA)</label>
-    <input
-      type="number"
-      id="mise"
-      step="100"
-      placeholder="Exemple : 10000"
-    >
+function calculer() {
+  const cote1 = Number(document.getElementById("cote1").value);
+  const cote2 = Number(document.getElementById("cote2").value);
+  const mise = Number(document.getElementById("mise").value);
+  const resultat = document.getElementById("resultat");
 
-    <button onclick="calculer()">
-      Calculer l'arbitrage
-    </button>
+  if (!Number.isFinite(cote1) || !Number.isFinite(cote2) ||
+      !Number.isFinite(mise) || cote1 <= 1 || cote2 <= 1 || mise <= 0) {
+    resultat.innerHTML = '<div class="error">Veuillez entrer des valeurs valides.</div>';
+    return;
+  }
 
-    <div id="resultat"></div>
+  const sommeInverse = (1 / cote1) + (1 / cote2);
+  const marge = (1 - sommeInverse) * 100;
 
-    <div id="bookmakers"></div>
+  if (marge <= 0) {
+    resultat.innerHTML = `<div class="error"><strong>Pas d'arbitrage</strong><br>Marge : ${marge.toFixed(2)} %</div>`;
+    return;
+  }
 
-  </div>
+  const mise1 = mise * ((1 / cote1) / sommeInverse);
+  const mise2 = mise * ((1 / cote2) / sommeInverse);
+  const retour = mise1 * cote1;
+  const profit = retour - mise;
 
-  <script src="data.js"></script>
-  <script src="matches.js"></script>
+  resultat.innerHTML = `
+    <div class="result">
+      <strong>✅ Arbitrage détecté</strong><br>
+      Marge : ${marge.toFixed(2)} %<br>
+      Mise cote ${cote1} : ${Math.round(mise1).toLocaleString("fr-FR")} CFA<br>
+      Mise cote ${cote2} : ${Math.round(mise2).toLocaleString("fr-FR")} CFA<br>
+      Retour garanti : ${Math.round(retour).toLocaleString("fr-FR")} CFA<br>
+      Profit garanti : ${Math.round(profit).toLocaleString("fr-FR")} CFA
+    </div>`;
+}
 
-  <script>
+function echapper(texte) {
+  return String(texte ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  })[c]);
+}
 
-    function calculer() {
+function analyserMatch(match) {
+  const meilleures = new Map();
 
-      const cote1 = parseFloat(
-        document.getElementById("cote1").value
-      );
+  for (const bookmaker of (match.bookmakers || [])) {
+    for (const market of (bookmaker.markets || [])) {
+      if (market.key !== "h2h") continue;
 
-      const cote2 = parseFloat(
-        document.getElementById("cote2").value
-      );
+      for (const outcome of (market.outcomes || [])) {
+        const nom = outcome.name;
+        const cote = Number(outcome.price);
+        if (!nom || !Number.isFinite(cote) || cote <= 1) continue;
 
-      const mise = parseFloat(
-        document.getElementById("mise").value
-      );
-
-      const resultat =
-        document.getElementById("resultat");
-
-      if (
-        isNaN(cote1) ||
-        isNaN(cote2) ||
-        isNaN(mise) ||
-        cote1 <= 1 ||
-        cote2 <= 1 ||
-        mise <= 0
-      ) {
-
-        resultat.innerHTML = `
-          <div class="error">
-            Veuillez entrer des valeurs valides.
-          </div>
-        `;
-
-        return;
+        const ancienne = meilleures.get(nom);
+        if (!ancienne || cote > ancienne.cote) {
+          meilleures.set(nom, {
+            cote,
+            bookmaker: bookmaker.title || bookmaker.key
+          });
+        }
       }
+    }
+  }
 
-      const sommeInverse =
-        (1 / cote1) + (1 / cote2);
+  const issues = Array.from(meilleures.entries());
+  if (issues.length < 2) return null;
 
-      const marge =
-        (1 - sommeInverse) * 100;
+  const sommeInverse = issues.reduce((somme, [, info]) => somme + 1 / info.cote, 0);
+  return {
+    issues,
+    sommeInverse,
+    marge: (1 - sommeInverse) * 100
+  };
+}
 
-      if (marge <= 0) {
+function dateMatch(date) {
+  if (!date) return "Date non disponible";
+  const d = new Date(date);
+  return Number.isNaN(d.getTime()) ? "Date non disponible" : d.toLocaleString("fr-FR");
+}
 
-        resultat.innerHTML = `
-          <div class="error">
+async function chargerCotes() {
+  const zone = document.getElementById("bookmakers");
+  const statut = document.getElementById("statut");
+  const bouton = document.getElementById("charger");
 
-            <strong>Pas d'arbitrage</strong>
+  bouton.disabled = true;
+  bouton.textContent = "Chargement...";
+  statut.textContent = "Récupération des matchs et des cotes...";
+  zone.innerHTML = "";
 
-            <br><br>
-
-            Marge :
-            ${marge.toFixed(2)} %
-
-          </div>
-        `;
-
-        return;
-      }
-
-      const mise1 =
-        mise *
-        ((1 / cote1) / sommeInverse);
-
-      const mise2 =
-        mise *
-        ((1 / cote2) / sommeInverse);
-
-      const retour =
-        mise1 * cote1;
-
-      const profit =
-        retour - mise;
-
-      resultat.innerHTML = `
-
-        <div class="result">
-
-          <strong>✅ Arbitrage détecté</strong>
-
-          <br><br>
-
-          Marge :
-          <strong>
-            ${marge.toFixed(2)} %
-          </strong>
-
-          <br>
-
-          Mise sur la cote ${cote1} :
-          <strong>
-            ${Math.round(mise1).toLocaleString()} CFA
-          </strong>
-
-          <br>
-
-          Mise sur la cote ${cote2} :
-          <strong>
-            ${Math.round(mise2).toLocaleString()} CFA
-          </strong>
-
-          <br>
-
-          Mise totale :
-          <strong>
-            ${Math.round(mise1 + mise2).toLocaleString()} CFA
-          </strong>
-
-          <br>
-
-          Retour garanti :
-          <strong>
-            ${Math.round(retour).toLocaleString()} CFA
-          </strong>
-
-          <br>
-
-          Profit garanti :
-          <strong>
-            ${Math.round(profit).toLocaleString()} CFA
-          </strong>
-
-        </div>
-
-      `;
+  try {
+    const reponse = await fetch(API_WORKER);
+    if (!reponse.ok) {
+      const details = await reponse.text();
+      throw new Error("Erreur du serveur (" + reponse.status + "). " + details.slice(0, 180));
     }
 
-
-    /* =========================
-       DÉTECTION AUTOMATIQUE
-       ========================= */
-
-    function afficherArbitrages() {
-
-      const zone =
-        document.getElementById("bookmakers");
-
-      zone.innerHTML = `
-        <h2>🔎 Détection automatique</h2>
-      `;
-
-      matches.forEach((match) => {
-
-        const meilleureCoteA =
-          Math.max(
-            ...match.bookmakers.map(
-              bookmaker => bookmaker.coteA
-            )
-          );
-
-        const meilleureCoteB =
-          Math.max(
-            ...match.bookmakers.map(
-              bookmaker => bookmaker.coteB
-            )
-          );
-
-        const bookmakerA =
-          match.bookmakers.find(
-            bookmaker =>
-              bookmaker.coteA === meilleureCoteA
-          );
-
-        const bookmakerB =
-          match.bookmakers.find(
-            bookmaker =>
-              bookmaker.coteB === meilleureCoteB
-          );
-
-        const sommeInverse =
-          (1 / meilleureCoteA) +
-          (1 / meilleureCoteB);
-
-        const marge =
-          (1 - sommeInverse) * 100;
-
-        const div =
-          document.createElement("div");
-
-        div.className =
-          marge > 0
-            ? "match arb"
-            : "match";
-
-        div.innerHTML = `
-
-          <strong>
-            ${match.equipeA} vs ${match.equipeB}
-          </strong>
-
-          <br><br>
-
-          Meilleure cote ${match.equipeA} :
-          <strong>${meilleureCoteA}</strong>
-
-          <br>
-
-          Bookmaker :
-          <strong>${bookmakerA.name}</strong>
-
-          <br><br>
-
-          Meilleure cote ${match.equipeB} :
-          <strong>${meilleureCoteB}</strong>
-
-          <br>
-
-          Bookmaker :
-          <strong>${bookmakerB.name}</strong>
-
-          <br><br>
-
-          Marge :
-          <strong>${marge.toFixed(2)} %</strong>
-
-          <br><br>
-
-          <strong>
-            ${
-              marge > 0
-                ? "✅ Arbitrage détecté"
-                : "❌ Pas d'arbitrage"
-            }
-          </strong>
-
-        `;
-
-        zone.appendChild(div);
-
-      });
-
+    const matchs = await reponse.json();
+    if (!Array.isArray(matchs)) {
+      throw new Error(matchs.error || "La réponse reçue n'est pas une liste de matchs.");
     }
 
-    afficherArbitrages();
+    if (matchs.length === 0) {
+      statut.textContent = "Connexion réussie, mais aucun match n'est disponible actuellement.";
+      return;
+    }
 
-  </script>
+    let nombreArbitrages = 0;
+    let analyses = 0;
 
+    for (const match of matchs) {
+      const analyse = analyserMatch(match);
+      const div = document.createElement("div");
+      div.className = "match";
+
+      let contenu = `
+        <strong>${echapper(match.home_team)} vs ${echapper(match.away_team)}</strong><br>
+        <span class="small">${echapper(dateMatch(match.commence_time))}</span><br><br>`;
+
+      if (!analyse) {
+        contenu += "Pas assez de cotes disponibles pour analyser ce match.";
+      } else {
+        analyses++;
+        for (const [nom, info] of analyse.issues) {
+          contenu += `<strong>${echapper(nom)}</strong> : ${info.cote.toFixed(2)}<br>
+            Bookmaker : ${echapper(info.bookmaker)}<br><br>`;
+        }
+
+        contenu += `Somme des probabilités : ${(analyse.sommeInverse * 100).toFixed(2)} %<br>
+          Marge d'arbitrage : <strong>${analyse.marge.toFixed(2)} %</strong><br><br>`;
+
+        if (analyse.marge > 0) {
+          div.classList.add("arb");
+          nombreArbitrages++;
+          contenu += "<strong>✅ ARBITRAGE POTENTIEL DÉTECTÉ</strong>";
+        } else {
+          contenu += "<strong>❌ Pas d'arbitrage</strong>";
+        }
+      }
+
+      div.innerHTML = contenu;
+      zone.appendChild(div);
+    }
+
+    statut.textContent = `${matchs.length} matchs reçus, ${analyses} analysés, ${nombreArbitrages} arbitrage(s) potentiel(s).`;
+  } catch (erreur) {
+    statut.textContent = "Impossible de récupérer les données.";
+    zone.innerHTML = `<div class="error">${echapper(erreur.message)}</div>`;
+  } finally {
+    bouton.disabled = false;
+    bouton.textContent = "Actualiser les matchs et les cotes";
+  }
+}
+
+chargerCotes();
+</script>
 </body>
 </html>
