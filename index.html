@@ -3,237 +3,353 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculateur d'arbitrage</title>
+  <title>ArbScan - Arbitrage sportif</title>
   <style>
-    :root { color-scheme: dark; --bg:#0b1220; --panel:#121d30; --line:#26364f; --muted:#9fb0c8; --text:#f4f7fb; --accent:#42d392; --blue:#68a7ff; }
-    * { box-sizing:border-box; }
-    body { margin:0; padding:18px; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; }
-    .wrap { max-width:950px; margin:auto; }
-    h1 { font-size:25px; margin:8px 0; }
-    .sub { color:var(--muted); margin:0 0 18px; line-height:1.5; }
-    .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin:14px 0; }
-    label { display:block; font-size:14px; color:var(--muted); margin:0 0 8px; }
-    select,input,button { width:100%; border-radius:9px; border:1px solid var(--line); padding:12px; font-size:16px; background:#0b1527; color:var(--text); }
-    button { background:#167b55; border:0; font-weight:bold; cursor:pointer; margin-top:12px; }
-    button:disabled { opacity:.55; }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .status { color:var(--muted); font-size:14px; line-height:1.5; }
-    .card { background:#0d192b; border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:12px; }
-    .match { font-weight:bold; font-size:17px; margin-bottom:7px; }
-    .meta { color:var(--muted); font-size:13px; margin-bottom:12px; }
-    .green { color:var(--accent); font-weight:bold; }
-    .outcomes { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-    .outcome { padding:10px; border-radius:9px; background:#15243a; }
-    .outcome b { display:block; font-size:17px; color:var(--blue); margin-top:5px; }
-    .profit { margin-top:12px; padding:10px; border-radius:9px; background:#103325; color:#a9f5d0; line-height:1.5; }
-    .small { font-size:12px; color:var(--muted); line-height:1.5; }
-    @media(max-width:600px) { body{padding:12px} .row{grid-template-columns:1fr} h1{font-size:22px} }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #f3f5f8; color: #172033; padding: 16px; }
+    .container { max-width: 760px; margin: 0 auto; }
+    .panel { background: #fff; padding: 18px; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 3px 14px rgba(0,0,0,.06); }
+    h1 { text-align: center; margin: 6px 0 8px; }
+    h2 { font-size: 19px; margin: 8px 0 12px; }
+    p { line-height: 1.5; }
+    .muted { color: #687386; font-size: 13px; }
+    label { display: block; font-weight: 700; margin: 13px 0 6px; }
+    input, select { width: 100%; padding: 12px; border: 1px solid #cbd2dc; border-radius: 8px; font-size: 16px; background: #fff; }
+    button { width: 100%; padding: 13px; border: 0; border-radius: 8px; background: #172033; color: #fff; font-size: 15px; font-weight: 700; margin-top: 13px; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .status { margin-top: 12px; padding: 12px; border-radius: 8px; background: #eef4ff; line-height: 1.5; font-size: 14px; }
+    .error { background: #fff0f0; color: #a32222; padding: 12px; border-radius: 8px; margin-top: 12px; line-height: 1.5; }
+    .arb-card { background: #fff; border: 1px solid #ccebd5; border-left: 5px solid #159447; border-radius: 12px; padding: 15px; margin: 13px 0; line-height: 1.6; }
+    .arb-title { font-weight: 800; font-size: 16px; margin-bottom: 5px; }
+    .tag { display: inline-block; background: #edf2f7; padding: 3px 8px; border-radius: 20px; font-size: 12px; margin: 3px 4px 6px 0; }
+    .bet { background: #f7f9fc; border-radius: 8px; padding: 10px; margin-top: 8px; }
+    .profit { color: #087a39; font-weight: 800; }
+    .smallline { color: #647084; font-size: 13px; }
+    .empty { text-align: center; color: #687386; padding: 22px 8px; }
+    .topline { display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; }
+    @media (min-width: 600px) { .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; } }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Calculateur d'arbitrage</h1>
-  <p class="sub">Comparaison automatique des cotes entre bookmakers. Seules les opportunités à exactement deux issues sont affichées.</p>
-
+<div class="container">
   <div class="panel">
-    <label for="sport">Choisir un sport</label>
-    <select id="sport"><option value="">Chargement des sports…</option></select>
-    <div class="row" style="margin-top:12px">
-      <div>
-        <label for="region">Région des bookmakers</label>
-        <select id="region">
-          <option value="eu">Europe</option>
-          <option value="uk">Royaume-Uni</option>
-          <option value="us">États-Unis</option>
-          <option value="au">Australie</option>
-        </select>
-      </div>
-      <div>
-        <label for="mise">Mise totale (CFA)</label>
-        <input id="mise" type="number" min="1" step="100" value="10000">
-      </div>
-    </div>
-    <button id="searchBtn" type="button">Rechercher les arbitrages</button>
-    <p id="status" class="status">Connexion au serveur…</p>
-    <p class="small">Marchés demandés : vainqueur (2 issues), handicaps et over/under. Les marchés disponibles dépendent du sport, des bookmakers et de ton abonnement API.</p>
+    <h1>ArbScan</h1>
+    <p class="muted" style="text-align:center">Détection automatique des arbitrages sportifs</p>
   </div>
 
-  <div id="results"></div>
+  <div class="panel">
+    <h2>Calculateur manuel</h2>
+    <div class="two">
+      <div>
+        <label for="cote1">Cote 1</label>
+        <input type="number" id="cote1" min="1.01" step="0.01" placeholder="Ex. 2.50">
+      </div>
+      <div>
+        <label for="cote2">Cote 2</label>
+        <input type="number" id="cote2" min="1.01" step="0.01" placeholder="Ex. 2.10">
+      </div>
+    </div>
+    <label for="mise">Mise totale (CFA)</label>
+    <input type="number" id="mise" min="1" step="100" value="10000">
+    <button type="button" onclick="calculer()">Calculer l'arbitrage</button>
+    <div id="resultat"></div>
+  </div>
+
+  <div class="panel">
+    <div class="topline">
+      <h2>Arbitrages disponibles</h2>
+      <span class="tag">2 issues uniquement</span>
+    </div>
+    <p class="muted">Tous les sports actifs disponibles dans ton abonnement sont recherchés. Seuls les arbitrages positifs à deux issues sont affichés.</p>
+
+    <label for="filtreSport">Filtrer par sport</label>
+    <select id="filtreSport" onchange="afficherArbitrages()">
+      <option value="all">Tous les sports</option>
+    </select>
+
+    <label for="miseAuto">Mise totale pour les calculs (CFA)</label>
+    <input type="number" id="miseAuto" min="1" step="100" value="10000" oninput="afficherArbitrages()">
+
+    <button id="charger" type="button" onclick="chargerTout()">Rechercher tous les sports</button>
+    <div id="statut" class="status">Préparation de la recherche...</div>
+    <div id="listeArbitrages"></div>
+  </div>
 </div>
 
 <script>
-const WORKER = "https://calculateurdarbritage.dansoucheikh40.workers.dev";
-const sportSelect = document.getElementById("sport");
-const regionSelect = document.getElementById("region");
-const miseInput = document.getElementById("mise");
-const statusEl = document.getElementById("status");
-const resultsEl = document.getElementById("results");
-const searchBtn = document.getElementById("searchBtn");
+"use strict";
 
-function setStatus(message) { statusEl.textContent = message; }
+// La clé API reste protégée dans Cloudflare Worker.
+// Le Worker doit exposer les routes /sports et /?sport=IDENTIFIANT.
+const API_WORKER = "https://calculateurdarbritage.dansoucheikh40.workers.dev";
+const MARCHES = "h2h,spreads,totals";
 
-async function loadSports() {
-  try {
-    const response = await fetch(WORKER + "/sports");
-    const data = await response.json();
-    if (!response.ok || !Array.isArray(data)) throw new Error(data.error || "Impossible de charger les sports");
-    const sports = data.filter(s => s.active);
-    sportSelect.innerHTML = "";
-    sports.forEach(s => {
-      const option = document.createElement("option");
-      option.value = s.key;
-      option.textContent = s.title || s.key;
-      sportSelect.appendChild(option);
-    });
-    if (!sports.length) throw new Error("Aucun sport actif trouvé.");
-    const preferred = sports.find(s => s.key === "soccer_epl") || sports[0];
-    sportSelect.value = preferred.key;
-    setStatus(sports.length + " sports disponibles. Choisis un sport puis lance la recherche.");
-  } catch (error) {
-    sportSelect.innerHTML = '<option value="">Erreur de chargement</option>';
-    setStatus("Erreur : " + error.message);
+let sportsDisponibles = [];
+let arbitrages = [];
+let erreursSports = [];
+
+function calculer() {
+  const cote1 = Number(document.getElementById("cote1").value);
+  const cote2 = Number(document.getElementById("cote2").value);
+  const mise = Number(document.getElementById("mise").value);
+  const resultat = document.getElementById("resultat");
+
+  if (!Number.isFinite(cote1) || !Number.isFinite(cote2) ||
+      !Number.isFinite(mise) || cote1 <= 1 || cote2 <= 1 || mise <= 0) {
+    resultat.innerHTML = '<div class="error">Entre deux cotes supérieures à 1 et une mise positive.</div>';
+    return;
   }
+
+  const somme = (1 / cote1) + (1 / cote2);
+  const marge = (1 - somme) * 100;
+  if (marge <= 0) {
+    resultat.innerHTML = `<div class="error">Pas d'arbitrage. Marge : ${marge.toFixed(2)} %</div>`;
+    return;
+  }
+
+  const mise1 = mise * ((1 / cote1) / somme);
+  const mise2 = mise * ((1 / cote2) / somme);
+  const retour = mise1 * cote1;
+  resultat.innerHTML = `<div class="arb-card">
+    <strong>Arbitrage détecté</strong><br>
+    Mise 1 : ${formatCFA(mise1)} CFA<br>
+    Mise 2 : ${formatCFA(mise2)} CFA<br>
+    Retour garanti : ${formatCFA(retour)} CFA<br>
+    <span class="profit">Profit garanti : ${formatCFA(retour - mise)} CFA (${marge.toFixed(2)} %)</span>
+  </div>`;
 }
 
-function cleanNumber(n) { return Number(Number(n).toFixed(3)); }
+function formatCFA(nombre) {
+  return Math.round(nombre).toLocaleString("fr-FR");
+}
 
-function findArbitrages(events) {
-  const found = [];
-  for (const event of events) {
-    const groups = new Map();
+function echapper(valeur) {
+  return String(valeur ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  })[c]);
+}
 
-    for (const bookmaker of (event.bookmakers || [])) {
-      for (const market of (bookmaker.markets || [])) {
-        if (!["h2h", "spreads", "totals"].includes(market.key)) continue;
-        for (const outcome of (market.outcomes || [])) {
-          if (typeof outcome.price !== "number" || outcome.price <= 1) continue;
+function dateMatch(date) {
+  if (!date) return "Date non disponible";
+  const d = new Date(date);
+  return Number.isNaN(d.getTime()) ? "Date non disponible" : d.toLocaleString("fr-FR");
+}
 
-          let lineKey = "main";
-          let outcomeKey = outcome.name;
-          let displayName = outcome.name;
+function cleMarche(market) {
+  const key = market.key;
+  if (key === "h2h") return "h2h";
+  const points = (market.outcomes || [])
+    .map(o => Number(o.point))
+    .filter(Number.isFinite);
+  if (!points.length) return key + "|sans-ligne";
+  // Pour les handicaps, les deux équipes ont normalement des points opposés.
+  const ligne = key === "spreads"
+    ? Math.abs(points[0]).toFixed(3)
+    : points[0].toFixed(3);
+  return key + "|" + ligne;
+}
 
-          if (market.key === "spreads") {
-            if (typeof outcome.point !== "number") continue;
-            lineKey = String(cleanNumber(Math.abs(outcome.point)));
-            outcomeKey = outcome.name;
-            displayName = outcome.name + " (" + (outcome.point > 0 ? "+" : "") + outcome.point + ")";
-          } else if (market.key === "totals") {
-            if (typeof outcome.point !== "number") continue;
-            lineKey = String(cleanNumber(outcome.point));
-            outcomeKey = outcome.name.toLowerCase();
-            displayName = outcome.name + " " + outcome.point;
-          }
+function analyserMatch(match, sport) {
+  const groupes = new Map();
 
-          const key = market.key + "|" + lineKey;
-          if (!groups.has(key)) groups.set(key, { market: market.key, line: lineKey, outcomes: new Map() });
-          const group = groups.get(key);
-          if (!group.outcomes.has(outcomeKey)) {
-            group.outcomes.set(outcomeKey, { name: displayName, price: outcome.price, bookmaker: bookmaker.title || bookmaker.key });
-          } else if (outcome.price > group.outcomes.get(outcomeKey).price) {
-            group.outcomes.set(outcomeKey, { name: displayName, price: outcome.price, bookmaker: bookmaker.title || bookmaker.key });
-          }
+  for (const bookmaker of (match.bookmakers || [])) {
+    for (const market of (bookmaker.markets || [])) {
+      if (!["h2h", "spreads", "totals"].includes(market.key)) continue;
+      const outcomes = (market.outcomes || []).filter(o =>
+        o && o.name && Number.isFinite(Number(o.price)) && Number(o.price) > 1
+      );
+      if (outcomes.length !== 2) continue;
+
+      const cle = cleMarche(market);
+      if (!groupes.has(cle)) groupes.set(cle, new Map());
+      const issues = groupes.get(cle);
+
+      for (const outcome of outcomes) {
+        const nom = String(outcome.name);
+        const cote = Number(outcome.price);
+        const ancienne = issues.get(nom);
+        if (!ancienne || cote > ancienne.cote) {
+          issues.set(nom, {
+            cote,
+            bookmaker: bookmaker.title || bookmaker.key || "Bookmaker",
+            point: outcome.point
+          });
         }
       }
     }
-
-    for (const group of groups.values()) {
-      const choices = [...group.outcomes.values()];
-      // Strictly require exactly two distinct outcomes; this excludes 1X2 with a draw.
-      if (choices.length !== 2) continue;
-      const inverseSum = choices.reduce((sum, item) => sum + 1 / item.price, 0);
-      if (inverseSum >= 1) continue;
-      const margin = (1 - inverseSum) * 100;
-      found.push({
-        home: event.home_team || "",
-        away: event.away_team || "",
-        commence: event.commence_time ? new Date(event.commence_time).toLocaleString("fr-FR") : "",
-        market: group.market,
-        line: group.line,
-        choices,
-        margin,
-        inverseSum
-      });
-    }
   }
-  return found.sort((a,b) => b.margin - a.margin);
+
+  const resultats = [];
+  for (const [cle, issuesMap] of groupes.entries()) {
+    // Ne jamais calculer un arbitrage avec 1 ou 3 issues : exactement 2.
+    if (issuesMap.size !== 2) continue;
+    const issues = Array.from(issuesMap.entries());
+    const somme = issues.reduce((total, item) => total + 1 / item[1].cote, 0);
+    const marge = (1 - somme) * 100;
+    if (marge <= 0) continue;
+
+    resultats.push({
+      sportKey: sport.key,
+      sportTitle: sport.title || sport.key,
+      eventId: match.id,
+      match: `${match.home_team || ""} vs ${match.away_team || ""}`,
+      date: match.commence_time,
+      marketKey: cle.split("|")[0],
+      marketLabel: cle.startsWith("h2h") ? "Vainqueur" :
+        cle.startsWith("spreads") ? "Handicap" : "Over / Under",
+      issues,
+      somme,
+      marge
+    });
+  }
+  return resultats;
 }
 
-function marketName(key) {
-  return ({h2h:"Vainqueur (2 issues)",spreads:"Handicap",totals:"Over / Under"})[key] || key;
+async function getJSON(url) {
+  const response = await fetch(url);
+  const texte = await response.text();
+  let data;
+  try { data = JSON.parse(texte); }
+  catch (_) { throw new Error("Réponse invalide du serveur (" + response.status + ")."); }
+  if (!response.ok) {
+    const message = data.details?.message || data.error || ("Erreur " + response.status);
+    throw new Error(message);
+  }
+  return data;
 }
 
-function renderResults(items) {
-  resultsEl.innerHTML = "";
-  if (!items.length) {
-    resultsEl.innerHTML = '<div class="panel">Aucune opportunité d’arbitrage à deux issues trouvée pour ce sport et cette région.</div>';
+async function avecLimite(items, limite, fonction) {
+  let index = 0;
+  const travailleurs = Array.from({length: Math.min(limite, items.length)}, async () => {
+    while (index < items.length) {
+      const actuel = items[index++];
+      await fonction(actuel);
+    }
+  });
+  await Promise.all(travailleurs);
+}
+
+async function chargerTout() {
+  const bouton = document.getElementById("charger");
+  const statut = document.getElementById("statut");
+  const zone = document.getElementById("listeArbitrages");
+  bouton.disabled = true;
+  bouton.textContent = "Recherche en cours...";
+  statut.textContent = "Récupération de la liste des sports...";
+  zone.innerHTML = "";
+  arbitrages = [];
+  erreursSports = [];
+
+  try {
+    const sports = await getJSON(API_WORKER + "/sports");
+    if (!Array.isArray(sports)) throw new Error("La liste des sports reçue est invalide.");
+
+    sportsDisponibles = sports.filter(s => s && s.key && s.active !== false);
+    remplirFiltre();
+
+    if (!sportsDisponibles.length) {
+      statut.textContent = "Aucun sport actif n'est disponible avec ton abonnement.";
+      return;
+    }
+
+    let termines = 0;
+    statut.textContent = ` ${sportsDisponibles.length} sports trouvés. Recherche des cotes...`;
+
+    await avecLimite(sportsDisponibles, 3, async sport => {
+      try {
+        const url = API_WORKER + "/?sport=" + encodeURIComponent(sport.key) +
+          "&markets=" + encodeURIComponent(MARCHES);
+        const matchs = await getJSON(url);
+        if (!Array.isArray(matchs)) throw new Error(matchs.error || "Données de matchs invalides.");
+        for (const match of matchs) {
+          arbitrages.push(...analyserMatch(match, sport));
+        }
+      } catch (e) {
+        erreursSports.push((sport.title || sport.key) + " : " + e.message);
+      }
+      termines++;
+      statut.textContent = `Recherche : ${termines}/${sportsDisponibles.length} sports traités. ${arbitrages.length} arbitrage(s) trouvé(s).`;
+    });
+
+    arbitrages.sort((a, b) => b.marge - a.marge);
+    afficherArbitrages();
+
+    const phraseErreur = erreursSports.length
+      ? ` ${erreursSports.length} sport(s) n'ont pas pu être interrogés.`
+      : "";
+    statut.textContent = `${sportsDisponibles.length} sports parcourus · ${arbitrages.length} arbitrage(s) à deux issues trouvés.${phraseErreur}`;
+    if (erreursSports.length) {
+      zone.insertAdjacentHTML("afterbegin",
+        `<details class="smallline"><summary>Voir les sports indisponibles</summary><p>${erreursSports.map(echapper).join("<br>")}</p></details>`);
+    }
+  } catch (e) {
+    statut.textContent = "La recherche n'a pas pu démarrer.";
+    zone.innerHTML = `<div class="error">${echapper(e.message)}</div>`;
+  } finally {
+    bouton.disabled = false;
+    bouton.textContent = "Rechercher tous les sports";
+  }
+}
+
+function remplirFiltre() {
+  const select = document.getElementById("filtreSport");
+  const valeurActuelle = select.value || "all";
+  select.innerHTML = '<option value="all">Tous les sports</option>';
+  for (const sport of sportsDisponibles) {
+    const option = document.createElement("option");
+    option.value = sport.key;
+    option.textContent = sport.title || sport.key;
+    select.appendChild(option);
+  }
+  select.value = sportsDisponibles.some(s => s.key === valeurActuelle) ? valeurActuelle : "all";
+}
+
+function afficherArbitrages() {
+  const zone = document.getElementById("listeArbitrages");
+  const filtre = document.getElementById("filtreSport").value;
+  const mise = Number(document.getElementById("miseAuto").value);
+  zone.innerHTML = "";
+
+  if (!Number.isFinite(mise) || mise <= 0) {
+    zone.innerHTML = '<div class="error">Entre une mise totale positive.</div>';
     return;
   }
-  const totalStake = Math.max(1, Number(miseInput.value) || 10000);
-  items.forEach(item => {
-    const inverse1 = 1 / item.choices[0].price;
-    const inverse2 = 1 / item.choices[1].price;
-    const stake1 = totalStake * inverse1 / item.inverseSum;
-    const stake2 = totalStake * inverse2 / item.inverseSum;
-    const payout = totalStake / item.inverseSum;
-    const profit = payout - totalStake;
-    const card = document.createElement("div");
-    card.className = "card";
-    const heading = document.createElement("div");
-    heading.className = "match";
-    heading.textContent = item.home + " – " + item.away;
-    card.appendChild(heading);
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.textContent = marketName(item.market) + (item.market !== "h2h" ? " | Ligne : " + item.line : "") + (item.commence ? " | " + item.commence : "");
-    card.appendChild(meta);
-    const outcomes = document.createElement("div");
-    outcomes.className = "outcomes";
-    item.choices.forEach((choice, index) => {
-      const box = document.createElement("div");
-      box.className = "outcome";
-      box.textContent = choice.name + " — " + choice.bookmaker;
-      const odds = document.createElement("b");
-      odds.textContent = "Cote : " + choice.price.toFixed(2);
-      box.appendChild(odds);
-      const stake = document.createElement("div");
-      stake.textContent = "Mise : " + Math.round(index === 0 ? stake1 : stake2).toLocaleString("fr-FR") + " CFA";
-      box.appendChild(stake);
-      outcomes.appendChild(box);
-    });
-    card.appendChild(outcomes);
-    const profitBox = document.createElement("div");
-    profitBox.className = "profit";
-    profitBox.innerHTML = '<span class="green">Arbitrage : ' + item.margin.toFixed(2) + '%</span><br>Retour estimé : ' + Math.round(payout).toLocaleString("fr-FR") + ' CFA<br>Profit estimé : ' + Math.round(profit).toLocaleString("fr-FR") + ' CFA';
-    card.appendChild(profitBox);
-    resultsEl.appendChild(card);
-  });
-}
 
-async function searchOdds() {
-  const sport = sportSelect.value;
-  if (!sport) { setStatus("Choisis d'abord un sport."); return; }
-  searchBtn.disabled = true;
-  resultsEl.innerHTML = "";
-  setStatus("Recherche des cotes en cours…");
-  try {
-    const url = WORKER + "/odds?sport=" + encodeURIComponent(sport) +
-      "&regions=" + encodeURIComponent(regionSelect.value) +
-      "&markets=h2h,spreads,totals";
-    const response = await fetch(url);
-    const data = await response.json();
-    if (!response.ok || !Array.isArray(data)) throw new Error(data.error || "Erreur pendant la récupération des cotes");
-    const opportunities = findArbitrages(data);
-    renderResults(opportunities);
-    setStatus(data.length + " matchs analysés. " + opportunities.length + " arbitrage(s) à deux issues trouvé(s).");
-  } catch (error) {
-    setStatus("Erreur : " + error.message);
-  } finally {
-    searchBtn.disabled = false;
+  const liste = arbitrages.filter(a => filtre === "all" || a.sportKey === filtre);
+  if (!liste.length) {
+    zone.innerHTML = '<div class="empty">Aucun arbitrage positif à deux issues pour ce filtre pour le moment.</div>';
+    return;
+  }
+
+  for (const arb of liste) {
+    const sommeMises = arb.issues.reduce((s, [, info]) => s + 1 / info.cote, 0);
+    const mises = arb.issues.map(([, info]) => mise * ((1 / info.cote) / sommeMises));
+    const retour = mises[0] * arb.issues[0][1].cote;
+    const profit = retour - mise;
+
+    const div = document.createElement("div");
+    div.className = "arb-card";
+    let html = `<div class="arb-title">${echapper(arb.match)}</div>
+      <span class="tag">${echapper(arb.sportTitle)}</span>
+      <span class="tag">${echapper(arb.marketLabel)}</span>
+      <div class="smallline">${echapper(dateMatch(arb.date))}</div>`;
+
+    arb.issues.forEach(([nom, info], i) => {
+      html += `<div class="bet"><strong>${echapper(nom)}</strong> — cote ${info.cote.toFixed(2)}<br>
+        Bookmaker : ${echapper(info.bookmaker)}<br>
+        Mise conseillée : <strong>${formatCFA(mises[i])} CFA</strong></div>`;
+    });
+
+    html += `<p style="margin-top:10px">Marge : <strong>${arb.marge.toFixed(2)} %</strong><br>
+      Retour estimé : ${formatCFA(retour)} CFA<br>
+      <span class="profit">Profit estimé : ${formatCFA(profit)} CFA</span></p>`;
+    div.innerHTML = html;
+    zone.appendChild(div);
   }
 }
 
-searchBtn.addEventListener("click", searchOdds);
-loadSports();
+// Lancement automatique : tous les sports sont sélectionnés par défaut.
+chargerTout();
 </script>
 </body>
 </html>
